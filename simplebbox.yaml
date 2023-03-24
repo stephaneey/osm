@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bbox  
+---  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simplebbox  
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simplebbox
+  template:
+    metadata:
+      labels:
+        app: simplebbox
+    spec:          
+      containers:
+      - name: simplebbox
+        image: governmentpaas/curl-ssl
+        command: ["/bin/sleep", "30d"]
+        imagePullPolicy: IfNotPresent        
+      serviceAccountName: bbox
+---

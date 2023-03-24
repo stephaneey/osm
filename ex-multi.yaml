@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: simpleapi  
+  namespace: osmdemo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bbox1  
+  namespace: osmdemo
+---  
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bbox2 
+  namespace: osmdemo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bbox1  
+  namespace: osmdemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bbox1
+  template:
+    metadata:
+      labels:
+        app: bbox1
+    spec:          
+      containers:
+      - name: bbox1
+        image: governmentpaas/curl-ssl
+        command: ["/bin/sleep", "30d"]
+        imagePullPolicy: IfNotPresent        
+      serviceAccountName: bbox1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bbox2  
+  namespace: osmdemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bbox2
+  template:
+    metadata:
+      labels:
+        app: bbox2
+    spec:          
+      containers:
+      - name: bbox2
+        image: governmentpaas/curl-ssl
+        command: ["/bin/sleep", "30d"]
+        imagePullPolicy: IfNotPresent        
+      serviceAccountName: bbox2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simpleapi  
+  namespace: osmdemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simpleapi
+  template:
+    metadata:
+      labels:
+        app: simpleapi
+    spec:      
+      serviceAccountName: simpleapi     
+      containers:
+      - name: simpleapi
+        image: stephaneey/osmapi:dev       
+        imagePullPolicy: IfNotPresent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simpleapisvc  
+  namespace: osmdemo
+  labels:
+    app: simpleapi
+    service: simpleapisvc
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: simpleapi
+---
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: simpleapiroutes
+  namespace: osmdemo
+spec:
+  matches:
+  - name: everything    
+    methods: ["GET","DELETE"]  
+  - name: getonly
+    methods: ["GET"]     
+---
+apiVersion: access.smi-spec.io/v1alpha3
+kind: TrafficTarget
+metadata:
+  name: simpleapisvcbbox1
+  namespace: osmdemo
+spec:
+  destination:
+    kind: ServiceAccount
+    name: simpleapi
+    namespace: osmdemo
+  rules:
+  - kind: HTTPRouteGroup
+    name: simpleapiroutes
+    matches:
+    - everything
+  sources:
+  - kind: ServiceAccount
+    name: bbox1
+    namespace: osmdemo    
+---
+apiVersion: access.smi-spec.io/v1alpha3
+kind: TrafficTarget
+metadata:
+  name: simpleapisvcbbox2
+  namespace: osmdemo
+spec:
+  destination:
+    kind: ServiceAccount
+    name: simpleapi
+    namespace: osmdemo
+  rules:
+  - kind: HTTPRouteGroup
+    name: simpleapiroutes
+    matches:
+    - getonly
+  sources:
+  - kind: ServiceAccount
+    name: bbox2
+    namespace: osmdemo    
+---  
+#curl -X DELETE -v http://simpleapisvc.osmdemo.svc.cluster.local/osm/1
+#curl -v http://simpleapisvc.osmdemo.svc.cluster.local/osm

@@ -1,0 +1,28 @@
+apiVersion: specs.smi-spec.io/v1alpha4
+kind: HTTPRouteGroup
+metadata:
+  name: all-routes
+spec:
+  matches:
+  - name: everything
+    methods: ["*"]
+---
+apiVersion: access.smi-spec.io/v1alpha3
+kind: TrafficTarget
+metadata:
+  name: simpleapisvc
+spec:
+  destination:
+    kind: ServiceAccount
+    name: simpleapi
+    namespace: osmdemo
+  rules:
+  - kind: HTTPRouteGroup
+    name: all-routes
+    matches:
+    - everything
+  sources:
+  - kind: ServiceAccount
+    name: bbox
+    namespace: osmdemo
+---

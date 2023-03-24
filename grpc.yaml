@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpcservice
+  namespace: grpc
+  labels:
+    app: grpcservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpcservice
+  template:
+    metadata:
+      labels:
+        app: grpcservice
+    spec:
+      containers:
+      - name: grpcservice
+        image: stephaneey/grpservice:dev        
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc
+  namespace: grpc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: grpcservice
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpccli
+  namespace: grpc
+  labels:
+    app: grpccli
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpccli
+  template:
+    metadata:
+      labels:
+        app: grpccli
+    spec:
+      containers:
+      - name: grpccli
+        image: stephaneey/grpccli:dev        
+        imagePullPolicy: Always
+        env:
+        - name: ServerEndpoint
+          value: "http://grpc.grpc.svc.cluster.local"
